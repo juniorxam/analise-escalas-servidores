@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from analise_vinculos import DEFAULT_WORKED, make_report, normalize_code, parse_document, write_outputs
+from parser import DEFAULT_WORKED, make_report, normalize_code, parse_document, write_outputs
 
 st.set_page_config(page_title='Escalas | Análise de vínculos', page_icon='📊', layout='wide', initial_sidebar_state='expanded')
 
