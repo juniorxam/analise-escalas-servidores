@@ -1,0 +1,13 @@
+Pillow>=10.0
+pytesseract>=0.3.10
+pdf2image>=1.17.0
+pandas>=2.0
+streamlit>=1.35
+pypdf>=5.0
+pdfplumber>=0.11
+
+# Além dos pacotes Python, para OCR instale no Ubuntu:
+# sudo apt-get install -y tesseract-ocr tesseract-ocr-por poppler-utils
+
+# Opcional para PDF que já possui texto: pdftotext (poppler-utils)
+# Sem Tesseract, PDFs textuais continuam funcionando; imagens e PDFs escaneados exigem OCR.
