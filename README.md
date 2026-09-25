@@ -44,6 +44,10 @@ O principal alerta é a lista de **dias coincidentes** entre os dois vínculos. 
 
 Os códigos dos dias continuam aparecendo na tabela mesmo quando não são considerados dias trabalhados. Assim, `F*HR`, `FT*HR`, `AF` e outros códigos podem ser auditados sem contaminar o total padrão.
 
+### Legenda de horários
+
+`M` = matutino, das 7h às 13h; `T` = tarde, das 13h às 19h; `N` = noturno, das 19h à 1h; `PD` = plantão diurno, das 7h às 19h; `PN` = plantão noturno, das 19h às 7h.
+
 ## Observações importantes
 
 A extração depende da qualidade do PDF/imagem e do desenho da tela. PDFs textuais são lidos por `pypdf`, sem depender obrigatoriamente de `pdftotext`; PDFs escaneados e imagens ainda precisam de OCR. Para o modelo de escala enviado, que possui vários setores/registros na mesma página, o programa usa a linha de referência dos dias `1` a `30` e associa cada código à coluna correspondente. Ele também preserva códigos específicos do modelo, como `F114`, `FT*T` e `T`, para conferência, sem incluí-los automaticamente no total de dias trabalhados. Em documentos com layout diferente, revise a tabela e o texto extraído.

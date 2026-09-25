@@ -20,8 +20,8 @@ MONTHS = {
     'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12,
 }
 # Códigos considerados como presença/trabalho por padrão. Ajuste via --codigos-trabalho.
-DEFAULT_WORKED = {'PD','PN','HR','S*HR','E*HR','EH','EHR','PLANTAO','PLANTÃO'}
-ALL_CODES = {'HR','S*HR','E*HR','F*HR','FT*HR','AF','PD','PN','EH','EHR','FH','FHR','FTHR','TROCA','FALTA','AFASTADO'}
+DEFAULT_WORKED = {'M','T','N','PD','PN','HR','S*HR','E*HR','EH','EHR','PLANTAO','PLANTÃO'}
+ALL_CODES = {'M','T','N','HR','S*HR','E*HR','F*HR','FT*HR','AF','PD','PN','EH','EHR','FH','FHR','FTHR','TROCA','FALTA','AFASTADO'}
 
 @dataclass
 class DayRecord:
@@ -165,7 +165,7 @@ def extract_hours(text: str) -> dict:
 
 def code_candidates(words):
     # Permite códigos compostos e variações que OCR tende a gerar.
-    pats = [r'^(?:S?\*?HR|E\*?HR|F\*?HR|FT\*?HR|AF|PD|PN)$', r'^(?:EH|EHR|FH|FHR|FTHR)$']
+    pats = [r'^(?:M|T|N|S?\*?HR|E\*?HR|F\*?HR|FT\*?HR|AF|PD|PN)$', r'^(?:EH|EHR|FH|FHR|FTHR)$']
     found=[]
     for w in words:
         token=normalize_code(w['text'])
@@ -228,7 +228,7 @@ def records_from_pdf_words(words, source, page=1) -> list[DayRecord]:
         x=float(w.get('x0', w.get('x', 0))) + float(w.get('width', w.get('w', 0))) / 2
         columns.append((x, day))
     calendar_bottom=max(float(w.get('bottom', w.get('y', 0)+w.get('height', w.get('h', 0)))) for w, _ in calendar)
-    token_re=re.compile(r'^(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|T|FALTA)$', re.I)
+    token_re=re.compile(r'^(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|M|T|N|FALTA)$', re.I)
     records=[]
     for w in words:
         code=normalize_code(str(w.get('text','')).strip())
@@ -264,7 +264,7 @@ def records_from_text(text, source, page=1) -> list[DayRecord]:
 
     # Inclui códigos conhecidos e alguns códigos específicos que aparecem
     # nesse sistema (ex.: F114 e FT*T), mantendo-os fora do total padrão.
-    token_re=re.compile(r'(?<![A-Za-z0-9])(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|T|FALTA)(?![A-Za-z0-9])', re.I)
+    token_re=re.compile(r'(?<![A-Za-z0-9])(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|M|T|N|FALTA)(?![A-Za-z0-9])', re.I)
     records=[]
     if day_line_index >= 0:
         end=len(lines)
@@ -282,7 +282,7 @@ def records_from_text(text, source, page=1) -> list[DayRecord]:
         return records
 
     # Fallback para PDFs simples sem a linha de cabeçalho 1..30.
-    code_re=r'(S\*HR|E\*HR|FT\*HR|F\*HR|HR|AF|PD|PN|EH|EHR|FHR|FTHR)'
+    code_re=r'(M|T|N|S\*HR|E\*HR|FT\*HR|F\*HR|HR|AF|PD|PN|EH|EHR|FHR|FTHR)'
     for line in lines:
         for m in re.finditer(rf'(?:(\b(?:0?[1-9]|[12][0-9]|3[01])\b)\s*{code_re}|{code_re}\s*(?:dia\s*)?(\b(?:0?[1-9]|[12][0-9]|3[01])\b))', line, re.I):
             groups=[g for g in m.groups() if g]

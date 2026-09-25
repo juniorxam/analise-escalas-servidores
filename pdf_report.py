@@ -105,7 +105,15 @@ def build_pdf_report(resultado: dict) -> bytes:
         ('RIGHTPADDING', (0, 0), (-1, -1), 9), ('TOPPADDING', (0, 0), (-1, -1), 8),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8), ('LINEAFTER', (0, 0), (1, 0), .5, LINE),
     ]))
-    story += [identity, Spacer(1, 5 * mm), Paragraph('Resumo executivo', styles['h1'])]
+    legend = Table([[
+        Paragraph('<b>Legenda de horários</b><br/>M = matutino · 07h–13h &nbsp; | &nbsp; T = tarde · 13h–19h &nbsp; | &nbsp; N = noturno · 19h–01h<br/>PD = plantão diurno · 07h–19h &nbsp; | &nbsp; PN = plantão noturno · 19h–07h', styles['muted'])
+    ]], colWidths=[174 * mm])
+    legend.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F0F7FF')), ('BOX', (0, 0), (-1, -1), .5, colors.HexColor('#B8D4F5')),
+        ('LEFTPADDING', (0, 0), (-1, -1), 9), ('RIGHTPADDING', (0, 0), (-1, -1), 9),
+        ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story += [identity, Spacer(1, 3 * mm), legend, Spacer(1, 5 * mm), Paragraph('Resumo executivo', styles['h1'])]
 
     metric_values = [
         ('Dias · vínculo 1', resumo.get('dias_trabalhados_vinculo_1', 0), BLUE),

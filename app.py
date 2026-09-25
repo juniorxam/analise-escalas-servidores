@@ -55,8 +55,11 @@ with st.sidebar:
     arquivo1 = st.file_uploader('Arquivo do vínculo 1', type=['pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff'], key='v1')
     arquivo2 = st.file_uploader('Arquivo do vínculo 2', type=['pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff'], key='v2')
     st.divider()
-    opcoes = ['PD', 'PN', 'HR', 'S*HR', 'E*HR', 'EH', 'EHR', 'F*HR', 'FT*HR', 'AF', 'TROCA']
+    opcoes = ['M', 'T', 'N', 'PD', 'PN', 'HR', 'S*HR', 'E*HR', 'EH', 'EHR', 'F*HR', 'FT*HR', 'AF', 'TROCA']
     codigos = st.multiselect('Códigos considerados trabalho', opcoes, default=[x for x in opcoes if x in DEFAULT_WORKED], help='Folgas, faltas e afastamentos ficam visíveis, mas não entram no total padrão.')
+    st.markdown('**Legenda de horários**')
+    st.caption('M = matutino · 07h–13h  |  T = tarde · 13h–19h  |  N = noturno · 19h–01h')
+    st.caption('PD = plantão diurno · 07h–19h  |  PN = plantão noturno · 19h–07h')
     analisar = st.button('Analisar arquivos', type='primary', use_container_width=True)
     st.divider()
     st.caption('A análise é auxiliar. Revise os documentos originais antes de concluir um caso.')
