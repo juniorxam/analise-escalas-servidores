@@ -22,7 +22,7 @@ streamlit run app.py
 
 O Streamlit abrirá uma página no navegador. Na barra lateral, envie os arquivos dos dois vínculos, selecione os códigos que devem contar como trabalho e clique em **Analisar arquivos**.
 
-A interface mostra cards de resumo, alerta de dias coincidentes, tabela dia a dia, gráfico comparativo, carga horária identificada, texto extraído para conferência e botões para baixar CSV, JSON e HTML.
+A interface mostra cards de resumo, alerta de dias coincidentes, tabela dia a dia, gráfico comparativo, carga horária identificada, texto extraído para conferência e botões para baixar CSV, JSON, HTML e um **PDF profissional formatado**. O PDF contém cabeçalho visual, identificação do servidor, resumo executivo, cartões de indicadores, alerta de coincidências, tabela dia a dia e notas de conferência.
 
 ## Uso por linha de comando
 

@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from parser import DEFAULT_WORKED, make_report, normalize_code, parse_document, write_outputs
+from pdf_report import build_pdf_report
 
 st.set_page_config(page_title='Escalas | Análise de vínculos', page_icon='📊', layout='wide', initial_sidebar_state='expanded')
 
@@ -163,11 +164,13 @@ report_download = {k: v for k, v in resultado.items() if k != '_docs'}
 with tempfile.TemporaryDirectory() as outdir:
     outbase = Path(outdir) / 'relatorio'; write_outputs(report_download, outbase)
     html_bytes, csv_bytes, json_bytes = (outbase.with_suffix(ext).read_bytes() for ext in ('.html', '.csv', '.json'))
+pdf_bytes = build_pdf_report(resultado)
 
 st.divider()
 st.markdown('<div class="section-title">Exportar análise</div>', unsafe_allow_html=True)
-d1, d2, d3 = st.columns(3)
+d1, d2, d3, d4 = st.columns(4)
 d1.download_button('Baixar CSV', csv_bytes, 'relatorio_vinculos.csv', 'text/csv', use_container_width=True)
 d2.download_button('Baixar JSON', json_bytes, 'relatorio_vinculos.json', 'application/json', use_container_width=True)
-d3.download_button('Baixar HTML', html_bytes, 'text/html', use_container_width=True)
+d3.download_button('Baixar HTML', html_bytes, 'relatorio_vinculos.html', 'text/html', use_container_width=True)
+d4.download_button('Baixar PDF profissional', pdf_bytes, 'relatorio_vinculos.pdf', 'application/pdf', use_container_width=True)
 st.caption('Versão Streamlit · resultado auxiliar sujeito à conferência nos documentos originais.')
