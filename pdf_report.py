@@ -70,6 +70,8 @@ def build_pdf_report(resultado: dict) -> bytes:
     servidor = resultado.get('servidor') or 'Servidor não identificado'
     criterios = ', '.join(resultado.get('criterio_codigos_trabalho', [])) or 'nenhum código selecionado'
     coincidencias = resumo.get('dias_coincidentes_lista', [])
+    horario_overlap = resumo.get('dias_sobrepostos_lista', [])
+    horario_sem_overlap = resumo.get('dias_mesmo_dia_sem_sobreposicao', [])
 
     buf = BytesIO()
     doc = SimpleDocTemplate(
@@ -143,9 +145,18 @@ def build_pdf_report(resultado: dict) -> bytes:
         notice_color, notice_bg = GREEN, colors.HexColor('#ECFDF5')
     notice = Table([[Paragraph(notice_text, styles['body'])]], colWidths=[174 * mm])
     notice.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), notice_bg), ('BOX', (0, 0), (-1, -1), .7, notice_color), ('LEFTPADDING', (0, 0), (-1, -1), 9), ('RIGHTPADDING', (0, 0), (-1, -1), 9), ('TOPPADDING', (0, 0), (-1, -1), 8), ('BOTTOMPADDING', (0, 0), (-1, -1), 8)]))
-    story += [notice, Spacer(1, 4 * mm), Paragraph('Conferência dia a dia', styles['h1'])]
+    story += [notice]
+    if horario_overlap:
+        overlap_notice = Table([[Paragraph('<b>Sobreposição real de horário:</b> ' + ', '.join(map(str, horario_overlap)) + '.', styles['body'])]], colWidths=[174 * mm])
+        overlap_notice.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#FDECEC')), ('BOX', (0, 0), (-1, -1), .7, colors.HexColor('#D92D20')), ('LEFTPADDING', (0, 0), (-1, -1), 9), ('RIGHTPADDING', (0, 0), (-1, -1), 9), ('TOPPADDING', (0, 0), (-1, -1), 8), ('BOTTOMPADDING', (0, 0), (-1, -1), 8)]))
+        story += [Spacer(1, 2 * mm), overlap_notice]
+    elif horario_sem_overlap:
+        no_overlap_notice = Table([[Paragraph('<b>Turnos diferentes:</b> nos dias ' + ', '.join(map(str, horario_sem_overlap)) + ', houve trabalho no mesmo dia, mas sem sobreposição entre os horários conhecidos.', styles['body'])]], colWidths=[174 * mm])
+        no_overlap_notice.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#EFF6FF')), ('BOX', (0, 0), (-1, -1), .7, colors.HexColor('#60A5FA')), ('LEFTPADDING', (0, 0), (-1, -1), 9), ('RIGHTPADDING', (0, 0), (-1, -1), 9), ('TOPPADDING', (0, 0), (-1, -1), 8), ('BOTTOMPADDING', (0, 0), (-1, -1), 8)]))
+        story += [Spacer(1, 2 * mm), no_overlap_notice]
+    story += [Spacer(1, 4 * mm), Paragraph('Conferência dia a dia', styles['h1'])]
 
-    header_row = [Paragraph(x, styles['table_head']) for x in ['Dia', 'Vínculo 1', 'Vínculo 2', 'Coincidente']]
+    header_row = [Paragraph(x, styles['table_head']) for x in ['Dia', 'Vínculo 1', 'Vínculo 2', 'Mesmo dia', 'Situação dos horários']]
     rows = [header_row]
     for item in resultado.get('dias', []):
         hit = bool(item.get('coincidente'))
@@ -154,10 +165,11 @@ def build_pdf_report(resultado: dict) -> bytes:
             Paragraph(_safe(item.get('vinculo_1')), styles['table_cell']),
             Paragraph(_safe(item.get('vinculo_2')), styles['table_cell']),
             Paragraph('SIM' if hit else 'não', styles['table_cell_bold']),
+            Paragraph(_safe(item.get('situacao_horarios')), styles['table_cell']),
         ])
     if len(rows) == 1:
-        rows.append([Paragraph('—', styles['table_cell']), Paragraph('Nenhum registro extraído', styles['table_cell']), Paragraph('—', styles['table_cell']), Paragraph('—', styles['table_cell'])])
-    day_table = Table(rows, colWidths=[18 * mm, 59 * mm, 59 * mm, 38 * mm], repeatRows=1)
+        rows.append([Paragraph('—', styles['table_cell']), Paragraph('Nenhum registro extraído', styles['table_cell']), Paragraph('—', styles['table_cell']), Paragraph('—', styles['table_cell']), Paragraph('—', styles['table_cell'])])
+    day_table = Table(rows, colWidths=[14 * mm, 42 * mm, 42 * mm, 25 * mm, 51 * mm], repeatRows=1)
     table_commands = [
         ('BACKGROUND', (0, 0), (-1, 0), NAVY), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('GRID', (0, 0), (-1, -1), .35, LINE), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -168,6 +180,8 @@ def build_pdf_report(resultado: dict) -> bytes:
         table_commands.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#FFF4E8') if item.get('coincidente') else (colors.white if i % 2 else SOFT)))
         if item.get('coincidente'):
             table_commands.append(('TEXTCOLOR', (3, i), (3, i), ORANGE))
+        if item.get('sobreposicao_horarios'):
+            table_commands.append(('TEXTCOLOR', (4, i), (4, i), colors.HexColor('#B42318')))
     day_table.setStyle(TableStyle(table_commands))
     story.append(day_table)
 

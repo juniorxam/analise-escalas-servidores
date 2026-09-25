@@ -343,6 +343,27 @@ def parse_document(path: Path) -> DocumentResult:
     return DocumentResult(path.name, text, meta, records, extract_hours(text), warnings)
 
 
+SHIFT_WINDOWS = {
+    'M': [(7, 13)],
+    'T': [(13, 19)],
+    'N': [(19, 25)],       # atravessa a meia-noite até 01h
+    'PD': [(7, 19)],
+    'PN': [(19, 31)],      # atravessa a meia-noite até 07h
+}
+
+
+def _schedule_windows(codes, worked):
+    selected = [normalize_code(code) for code in codes if normalize_code(code) in worked]
+    windows=[]
+    unknown=[]
+    for code in selected:
+        if code in SHIFT_WINDOWS:
+            windows.extend((start, end, code) for start, end in SHIFT_WINDOWS[code])
+        else:
+            unknown.append(code)
+    return selected, windows, unknown
+
+
 def make_report(a: DocumentResult,b: DocumentResult, worked: set[str]) -> dict:
     def by_day(doc):
         d={}
@@ -352,19 +373,40 @@ def make_report(a: DocumentResult,b: DocumentResult, worked: set[str]) -> dict:
     da,db=by_day(a),by_day(b)
     wa={d for d,codes in da.items() if any(c in worked for c in codes)}
     wb={d for d,codes in db.items() if any(c in worked for c in codes)}
-    overlap=sorted(wa & wb); union=sorted(wa | wb)
+    same_day=sorted(wa & wb); union=sorted(wa | wb)
+    schedule_analysis={}; schedule_overlap=[]; same_day_without_overlap=[]; undetermined=[]
+    for day in same_day:
+        codes_a, windows_a, unknown_a = _schedule_windows(da.get(day, []), worked)
+        codes_b, windows_b, unknown_b = _schedule_windows(db.get(day, []), worked)
+        pairs=[(ca, cb) for sa, ea, ca in windows_a for sb, eb, cb in windows_b if max(sa, sb) < min(ea, eb)]
+        if pairs:
+            schedule_analysis[day]={'status':'sobreposição de horário','pares':pairs}
+            schedule_overlap.append(day)
+        elif unknown_a or unknown_b or not windows_a or not windows_b:
+            schedule_analysis[day]={'status':'horário não determinado','pares':[], 'codigos_indeterminados':sorted(set(unknown_a+unknown_b))}
+            undetermined.append(day)
+        else:
+            schedule_analysis[day]={'status':'turnos diferentes sem sobreposição','pares':[]}
+            same_day_without_overlap.append(day)
     month=a.metadata.get('referencia_mes') or b.metadata.get('referencia_mes')
     year=a.metadata.get('referencia_ano') or b.metadata.get('referencia_ano')
     def rows(days):
         return [{'dia':d,'vinculo_1':', '.join(da.get(d,[])),'vinculo_2':', '.join(db.get(d,[])),
-                 'coincidente':d in overlap} for d in days]
+                 'coincidente':d in same_day,
+                 'sobreposicao_horarios':d in schedule_overlap,
+                 'situacao_horarios':schedule_analysis.get(d,{}).get('status','—')} for d in days]
     return {'periodo':{'mes':month,'ano':year},'criterio_codigos_trabalho':sorted(worked),
             'servidor':a.metadata.get('nome') or b.metadata.get('nome'),
             'documentos':[{'arquivo':a.source,'metadata':a.metadata,'carga_horaria':a.hours,'avisos':a.warnings},
                           {'arquivo':b.source,'metadata':b.metadata,'carga_horaria':b.hours,'avisos':b.warnings}],
             'resumo':{'dias_trabalhados_vinculo_1':len(wa),'dias_trabalhados_vinculo_2':len(wb),
-                      'dias_coincidentes':len(overlap),'dias_distintos_no_total':len(union),
-                      'dias_coincidentes_lista':overlap},
+                      'dias_coincidentes':len(same_day),'dias_distintos_no_total':len(union),
+                      'dias_coincidentes_lista':same_day,
+                      'dias_sobreposicao_horarios':len(schedule_overlap),
+                      'dias_sobrepostos_lista':schedule_overlap,
+                      'dias_mesmo_dia_sem_sobreposicao':same_day_without_overlap,
+                      'dias_horario_nao_determinado':undetermined},
+            'analise_horarios':schedule_analysis,
             'dias':rows(union)}
 
 

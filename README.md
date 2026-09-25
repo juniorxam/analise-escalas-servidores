@@ -40,7 +40,9 @@ python analise_vinculos.py a.png b.png --codigos-trabalho PD --saida saida/caso_
 
 ## O que é analisado
 
-O principal alerta é a lista de **dias coincidentes** entre os dois vínculos. Por padrão, a aplicação considera `PD`, `PN`, `HR`, `S*HR`, `E*HR`, `EH`, `EHR` e `PLANTAO` como códigos de trabalho. O critério pode ser alterado na barra lateral ou pelo parâmetro `--codigos-trabalho`.
+O principal alerta é a lista de **dias coincidentes** entre os dois vínculos. Por padrão, a aplicação considera `M`, `T`, `N`, `PD`, `PN`, `HR`, `S*HR`, `E*HR`, `EH`, `EHR` e `PLANTAO` como códigos de trabalho. O critério pode ser alterado na barra lateral ou pelo parâmetro `--codigos-trabalho`.
+
+Além de identificar trabalho no mesmo dia, o sistema compara os horários conhecidos: `M` (07h–13h), `T` (13h–19h), `N` (19h–01h), `PD` (07h–19h) e `PN` (19h–07h). Assim, `M` em um vínculo e `T` no outro são classificados como **mesmo dia, mas sem sobreposição**; `PD` e `M` são classificados como **sobreposição real**. Quando o código não informa uma faixa horária conhecida, o resultado fica como **horário não determinado** para conferência manual.
 
 Os códigos dos dias continuam aparecendo na tabela mesmo quando não são considerados dias trabalhados. Assim, `F*HR`, `FT*HR`, `AF` e outros códigos podem ser auditados sem contaminar o total padrão.
 

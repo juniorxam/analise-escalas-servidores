@@ -122,6 +122,13 @@ if resumo['dias_coincidentes']:
 else:
     st.success('Nenhum dia coincidente foi identificado pelos códigos selecionados.')
 
+if resumo.get('dias_sobreposicao_horarios'):
+    st.error(f"Sobreposição real de horários em {resumo['dias_sobreposicao_horarios']} dia(s): {', '.join(map(str, resumo['dias_sobrepostos_lista']))}.")
+elif resumo.get('dias_mesmo_dia_sem_sobreposicao'):
+    st.info(f"Há trabalho no mesmo dia, mas em turnos diferentes sem sobreposição em: {', '.join(map(str, resumo['dias_mesmo_dia_sem_sobreposicao']))}.")
+if resumo.get('dias_horario_nao_determinado'):
+    st.caption(f"Horário não determinado automaticamente nos dias: {', '.join(map(str, resumo['dias_horario_nao_determinado']))}. Confira os documentos originais.")
+
 total_codigos = sum(len(doc.days) for doc in resultado['_docs'])
 if total_codigos == 0:
     st.error('Nenhum código de escala foi reconhecido. Consulte “Documentos e avisos” para verificar o texto extraído e os avisos.')
@@ -138,8 +145,10 @@ with aba_dias:
         st.warning('Nenhum código de jornada foi extraído. Verifique o OCR e o layout do documento.')
     else:
         df['coincidente'] = df['coincidente'].map({True: 'SIM', False: 'não'})
-        styled = df.rename(columns={'dia': 'Dia', 'vinculo_1': 'Vínculo 1', 'vinculo_2': 'Vínculo 2', 'coincidente': 'Coincidente'})
-        st.dataframe(styled, use_container_width=True, hide_index=True, height=min(620, 95 + len(styled) * 36), column_config={'Dia': st.column_config.NumberColumn(width='small'), 'Coincidente': st.column_config.TextColumn(width='small')})
+        styled = df.rename(columns={'dia': 'Dia', 'vinculo_1': 'Vínculo 1', 'vinculo_2': 'Vínculo 2', 'coincidente': 'Mesmo dia', 'sobreposicao_horarios': 'Sobreposição', 'situacao_horarios': 'Situação dos horários'})
+        styled['Mesmo dia'] = styled['Mesmo dia'].map({True: 'SIM', False: 'não'})
+        styled['Sobreposição'] = styled['Sobreposição'].map({True: 'SIM', False: 'não'})
+        st.dataframe(styled, use_container_width=True, hide_index=True, height=min(620, 95 + len(styled) * 36), column_config={'Dia': st.column_config.NumberColumn(width='small'), 'Mesmo dia': st.column_config.TextColumn(width='small'), 'Sobreposição': st.column_config.TextColumn(width='small')})
         st.caption('Os códigos de faltas, trocas e afastamentos permanecem visíveis para auditoria.')
 
 with aba_graficos:
