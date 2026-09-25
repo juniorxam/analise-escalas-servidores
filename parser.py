@@ -424,13 +424,14 @@ def write_outputs(report, outbase: Path):
     outbase.parent.mkdir(parents=True, exist_ok=True)
     outbase.with_suffix('.json').write_text(json.dumps(report,ensure_ascii=False,indent=2), encoding='utf-8')
     with outbase.with_suffix('.csv').open('w',newline='',encoding='utf-8-sig') as f:
-        fields=['dia','vinculo_1','vinculo_2','coincidente']; w=csv.DictWriter(f,fieldnames=fields,delimiter=';'); w.writeheader(); w.writerows(report['dias'])
+        fields=['dia','vinculo_1','vinculo_2','coincidente','sobreposicao_horarios','situacao_horarios']
+        w=csv.DictWriter(f,fieldnames=fields,delimiter=';',extrasaction='ignore'); w.writeheader(); w.writerows(report['dias'])
     r=report['resumo'];
     html=f'''<!doctype html><meta charset="utf-8"><title>Análise de dois vínculos</title>
     <style>body{{font-family:Arial;margin:32px}} table{{border-collapse:collapse}}td,th{{border:1px solid #bbb;padding:7px}} th{{background:#eee}} .alert{{color:#a00;font-weight:bold}}</style>
     <h1>Análise de dois vínculos</h1><p><b>Servidor:</b> {report['servidor'] or 'não identificado'}<br><b>Período:</b> {report['periodo']['mes'] or '?'} / {report['periodo']['ano'] or '?'}</p>
     <ul><li>Vínculo 1: {r['dias_trabalhados_vinculo_1']} dias</li><li>Vínculo 2: {r['dias_trabalhados_vinculo_2']} dias</li><li class="alert">Coincidências: {r['dias_coincidentes']} dias ({', '.join(map(str,r['dias_coincidentes_lista'])) or 'nenhuma'})</li><li>Dias distintos no total: {r['dias_distintos_no_total']}</li></ul>
-    <table><tr><th>Dia</th><th>Vínculo 1</th><th>Vínculo 2</th><th>Coincidente?</th></tr>{''.join(f"<tr><td>{x['dia']}</td><td>{x['vinculo_1']}</td><td>{x['vinculo_2']}</td><td>{'SIM' if x['coincidente'] else 'não'}</td></tr>" for x in report['dias'])}</table>
+    <table><tr><th>Dia</th><th>Vínculo 1</th><th>Vínculo 2</th><th>Mesmo dia?</th><th>Sobreposição?</th><th>Situação dos horários</th></tr>{''.join(f"<tr><td>{x['dia']}</td><td>{x['vinculo_1']}</td><td>{x['vinculo_2']}</td><td>{'SIM' if x['coincidente'] else 'não'}</td><td>{'SIM' if x.get('sobreposicao_horarios') else 'não'}</td><td>{x.get('situacao_horarios','—')}</td></tr>" for x in report['dias'])}</table>
     <p><small>Relatório auxiliar. Confirme a leitura dos códigos e a regra administrativa aplicável.</small></p>'''
     outbase.with_suffix('.html').write_text(html,encoding='utf-8')
 
