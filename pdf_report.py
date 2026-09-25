@@ -108,7 +108,7 @@ def build_pdf_report(resultado: dict) -> bytes:
         ('BOTTOMPADDING', (0, 0), (-1, -1), 8), ('LINEAFTER', (0, 0), (1, 0), .5, LINE),
     ]))
     legend = Table([[
-        Paragraph('<b>Legenda de horários</b><br/>M = matutino · 07h–13h &nbsp; | &nbsp; T = tarde · 13h–19h &nbsp; | &nbsp; N = noturno · 19h–01h<br/>PD = plantão diurno · 07h–19h &nbsp; | &nbsp; PN = plantão noturno · 19h–07h', styles['muted'])
+        Paragraph('<b>Legenda oficial de horários</b><br/>M: 07h–13h &nbsp; | &nbsp; N6: 19h–01h &nbsp; | &nbsp; PD: 07h–19h &nbsp; | &nbsp; PN: 19h–07h<br/>T4: 14h–18h &nbsp; | &nbsp; T: 13h–19h &nbsp; | &nbsp; P: 07h–07h do dia seguinte<br/>A51 = licença maternidade &nbsp; | &nbsp; F1 = férias &nbsp; | &nbsp; F114 = atestado médico &nbsp; | &nbsp; F128 = falta plantão 12h<br/><b>E*</b> antes do código = plantão extra (ex.: E*PD, E*PN).', styles['muted'])
     ]], colWidths=[174 * mm])
     legend.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F0F7FF')), ('BOX', (0, 0), (-1, -1), .5, colors.HexColor('#B8D4F5')),

@@ -20,8 +20,8 @@ MONTHS = {
     'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12,
 }
 # Códigos considerados como presença/trabalho por padrão. Ajuste via --codigos-trabalho.
-DEFAULT_WORKED = {'M','T','N','PD','PN','HR','S*HR','E*HR','EH','EHR','PLANTAO','PLANTÃO'}
-ALL_CODES = {'M','T','N','HR','S*HR','E*HR','F*HR','FT*HR','AF','PD','PN','EH','EHR','FH','FHR','FTHR','TROCA','FALTA','AFASTADO'}
+DEFAULT_WORKED = {'M','T','T4','N6','N','P','PD','PN','HR','S*HR','E*HR','EH','EHR','PLANTAO','PLANTÃO'}
+ALL_CODES = {'M','T','T4','N6','N','P','HR','S*HR','E*HR','F*HR','FT*HR','AF','A51','PD','PN','EH','EHR','FH','FHR','FTHR','TROCA','FALTA','AFASTADO'}
 
 @dataclass
 class DayRecord:
@@ -165,7 +165,7 @@ def extract_hours(text: str) -> dict:
 
 def code_candidates(words):
     # Permite códigos compostos e variações que OCR tende a gerar.
-    pats = [r'^(?:M|T|N|S?\*?HR|E\*?HR|F\*?HR|FT\*?HR|AF|PD|PN)$', r'^(?:EH|EHR|FH|FHR|FTHR)$']
+    pats = [r'^(?:E\*)?(?:M|T4|T|N6|N|P|S?\*?HR|E\*?HR|F\*?HR|FT\*?HR|AF|A51|PD|PN)$', r'^(?:EH|EHR|FH|FHR|FTHR)$']
     found=[]
     for w in words:
         token=normalize_code(w['text'])
@@ -228,7 +228,7 @@ def records_from_pdf_words(words, source, page=1) -> list[DayRecord]:
         x=float(w.get('x0', w.get('x', 0))) + float(w.get('width', w.get('w', 0))) / 2
         columns.append((x, day))
     calendar_bottom=max(float(w.get('bottom', w.get('y', 0)+w.get('height', w.get('h', 0)))) for w, _ in calendar)
-    token_re=re.compile(r'^(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|M|T|N|FALTA)$', re.I)
+    token_re=re.compile(r'^(?:E\*)?(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|A51|PD|PN|EH|FH|TROCA|M|T4|T|N6|N|P|FALTA)$', re.I)
     records=[]
     for w in words:
         code=normalize_code(str(w.get('text','')).strip())
@@ -264,7 +264,7 @@ def records_from_text(text, source, page=1) -> list[DayRecord]:
 
     # Inclui códigos conhecidos e alguns códigos específicos que aparecem
     # nesse sistema (ex.: F114 e FT*T), mantendo-os fora do total padrão.
-    token_re=re.compile(r'(?<![A-Za-z0-9])(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|PD|PN|EH|FH|TROCA|M|T|N|FALTA)(?![A-Za-z0-9])', re.I)
+    token_re=re.compile(r'(?<![A-Za-z0-9])(?:E\*)?(?:FT\*HR|F\*HR|E\*HR|S\*HR|FT\*T|F\d+|FTHR|FHR|EHR|HR|AF|A51|PD|PN|EH|FH|TROCA|M|T4|T|N6|N|P|FALTA)(?![A-Za-z0-9])', re.I)
     records=[]
     if day_line_index >= 0:
         end=len(lines)
@@ -282,7 +282,7 @@ def records_from_text(text, source, page=1) -> list[DayRecord]:
         return records
 
     # Fallback para PDFs simples sem a linha de cabeçalho 1..30.
-    code_re=r'(M|T|N|S\*HR|E\*HR|FT\*HR|F\*HR|HR|AF|PD|PN|EH|EHR|FHR|FTHR)'
+    code_re=r'((?:E\*)?(?:M|T4|T|N6|N|P|S\*HR|E\*HR|FT\*HR|F\*HR|HR|AF|A51|PD|PN|EH|EHR|FHR|FTHR))'
     for line in lines:
         for m in re.finditer(rf'(?:(\b(?:0?[1-9]|[12][0-9]|3[01])\b)\s*{code_re}|{code_re}\s*(?:dia\s*)?(\b(?:0?[1-9]|[12][0-9]|3[01])\b))', line, re.I):
             groups=[g for g in m.groups() if g]
@@ -346,19 +346,26 @@ def parse_document(path: Path) -> DocumentResult:
 SHIFT_WINDOWS = {
     'M': [(7, 13)],
     'T': [(13, 19)],
+    'T4': [(14, 18)],
+    'N6': [(19, 25)],
     'N': [(19, 25)],       # atravessa a meia-noite até 01h
+    'P': [(7, 31)],        # entrada e saída às 07h do dia seguinte
     'PD': [(7, 19)],
     'PN': [(19, 31)],      # atravessa a meia-noite até 07h
 }
 
 
 def _schedule_windows(codes, worked):
-    selected = [normalize_code(code) for code in codes if normalize_code(code) in worked]
+    def base_code(code):
+        code=normalize_code(code)
+        return code[2:] if code.startswith('E*') else code
+    selected = [normalize_code(code) for code in codes if base_code(code) in worked or normalize_code(code) in worked]
     windows=[]
     unknown=[]
     for code in selected:
-        if code in SHIFT_WINDOWS:
-            windows.extend((start, end, code) for start, end in SHIFT_WINDOWS[code])
+        base=base_code(code)
+        if base in SHIFT_WINDOWS:
+            windows.extend((start, end, code) for start, end in SHIFT_WINDOWS[base])
         else:
             unknown.append(code)
     return selected, windows, unknown
@@ -371,8 +378,11 @@ def make_report(a: DocumentResult,b: DocumentResult, worked: set[str]) -> dict:
             d.setdefault(r.day,[]).append(r.code)
         return {k:sorted(set(v)) for k,v in d.items()}
     da,db=by_day(a),by_day(b)
-    wa={d for d,codes in da.items() if any(c in worked for c in codes)}
-    wb={d for d,codes in db.items() if any(c in worked for c in codes)}
+    def is_worked(code):
+        code=normalize_code(code)
+        return code in worked or (code.startswith('E*') and code[2:] in worked)
+    wa={d for d,codes in da.items() if any(is_worked(c) for c in codes)}
+    wb={d for d,codes in db.items() if any(is_worked(c) for c in codes)}
     same_day=sorted(wa & wb); union=sorted(wa | wb)
     schedule_analysis={}; schedule_overlap=[]; same_day_without_overlap=[]; undetermined=[]
     for day in same_day:
